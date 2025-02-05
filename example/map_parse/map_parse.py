@@ -27,7 +27,7 @@ class Edge:
     face: int
 
 
-class BytesFactory:
+class BytesHelper:
     @staticmethod
     def uint8(value: bytes) -> int:
         return unpack("B", value)[0]
@@ -51,6 +51,7 @@ class BytesFactory:
 
         return bytes_list
 
+
 def write_pkl(file_name: str, triangles: Iterable[Triangle]) -> None:
     with open(f"{file_name}.pkl", "wb") as file:
         dump(triangles, file, protocol=HIGHEST_PROTOCOL)
@@ -69,6 +70,22 @@ def write_tri(file_name: str, triangles: Iterable[Triangle]) -> None:
     with open(f"{file_name}.tri", "w") as file:
         file.write(triangles_byte)
 
+def write_bin(file_name: str, triangles: Iterable[Triangle]) -> None:
+    byte_raw = list()
+    for triangle in triangles:
+        for point in (triangle.p1, triangle.p2, triangle.p3):
+            byte_raw.append(point.x)
+            byte_raw.append(point.y)
+            byte_raw.append(point.z)
+    triangles_byte = b"".join([
+        pack("f", i)
+        for i in byte_raw
+    ])
+    with open(f"{file_name}.bin", "wb") as file:
+        file.write(triangles_byte)
+
+
+
 
 def main() -> None:
     parser = VphysParser.from_file_name("parse_example.vphys")
@@ -86,31 +103,48 @@ def main() -> None:
         faces_raw = parser.search("m_parts", 0, "m_rnShape", "m_hulls", index, "m_Hull", "m_Faces")
         edges_raw = parser.search("m_parts", 0, "m_rnShape", "m_hulls", index, "m_Hull", "m_Edges")
 
-        vertices = list()
-        vertices_merged = BytesFactory.bytes_merge(vertices_raw, 4)
-        for i in range(len(vertices_merged) // 3):
-            i *= 3
-            vertices.append(Vec3(
-                BytesFactory.float(vertices_merged[i]),
-                BytesFactory.float(vertices_merged[i + 1]),
-                BytesFactory.float(vertices_merged[i + 2])
-            ))
-
-        faces = [
-            BytesFactory.uint8(byte)
-            for byte in BytesFactory.bytes_merge(faces_raw, 1)
+        # vertices = list()
+        vertices_merged = BytesHelper.bytes_merge(vertices_raw, 4)
+        # for i in range(len(vertices_merged) // 3):
+        #     i *= 3
+        #     vertices.append(Vec3(
+        #         BytesHelper.float(vertices_merged[i]),
+        #         BytesHelper.float(vertices_merged[i + 1]),
+        #         BytesHelper.float(vertices_merged[i + 2])
+        #     ))
+        vertices = [
+            Vec3(
+                BytesHelper.float(vertices_merged[(ii := i * 3)]),
+                BytesHelper.float(vertices_merged[ii + 1]),
+                BytesHelper.float(vertices_merged[ii + 2])
+            )
+            for i in range(len(vertices_merged) // 3)
         ]
 
-        edges = list()
-        edges_merged = BytesFactory.bytes_merge(edges_raw, 1)
-        for i in range(len(edges_merged) // 4):
-            i *= 4
-            edges.append(Edge(
-                BytesFactory.uint8(edges_merged[i]),
-                BytesFactory.uint8(edges_merged[i + 1]),
-                BytesFactory.uint8(edges_merged[i + 2]),
-                BytesFactory.uint8(edges_merged[i + 3])
-            ))
+        faces = (
+            BytesHelper.uint8(byte)
+            for byte in BytesHelper.bytes_merge(faces_raw, 1)
+        )
+
+        # edges = list()
+        edges_merged = BytesHelper.bytes_merge(edges_raw, 1)
+        # for i in range(len(edges_merged) // 4):
+        #     i *= 4
+        #     edges.append(Edge(
+        #         BytesHelper.uint8(edges_merged[i]),
+        #         BytesHelper.uint8(edges_merged[i + 1]),
+        #         BytesHelper.uint8(edges_merged[i + 2]),
+        #         BytesHelper.uint8(edges_merged[i + 3])
+        #     ))
+        edges = [
+            Edge(
+                BytesHelper.uint8(edges_merged[(ii := i * 4)]),
+                BytesHelper.uint8(edges_merged[ii + 1]),
+                BytesHelper.uint8(edges_merged[ii + 2]),
+                BytesHelper.uint8(edges_merged[ii + 3]),
+            )
+            for i in range(len(edges_merged) // 4)
+        ]
 
         for start_edge in faces:
             edge = edges[start_edge].next
@@ -137,31 +171,50 @@ def main() -> None:
         triangles_raw = parser.search("m_parts", 0, "m_rnShape", "m_meshes", index, "m_Mesh", "m_Triangles")
         vertices_raw = parser.search("m_parts", 0, "m_rnShape", "m_meshes", index, "m_Mesh", "m_Vertices")
 
-        vertices = list()
-        vertices_merged = BytesFactory.bytes_merge(vertices_raw, 4)
-        for i in range(len(vertices_merged) // 3):
-            i *= 3
-            vertices.append(Vec3(
-                BytesFactory.float(vertices_merged[i]),
-                BytesFactory.float(vertices_merged[i + 1]),
-                BytesFactory.float(vertices_merged[i + 2])
-            ))
+        # vertices = list()
+        vertices_merged = BytesHelper.bytes_merge(vertices_raw, 4)
+        # for i in range(len(vertices_merged) // 3):
+        #     i *= 3
+        #     vertices.append(Vec3(
+        #         BytesHelper.float(vertices_merged[i]),
+        #         BytesHelper.float(vertices_merged[i + 1]),
+        #         BytesHelper.float(vertices_merged[i + 2])
+        #     ))
+        vertices = [
+            Vec3(
+                BytesHelper.float(vertices_merged[(ii := i * 3)]),
+                BytesHelper.float(vertices_merged[ii + 1]),
+                BytesHelper.float(vertices_merged[ii + 2])
+            )
+            for i in range(len(vertices_merged) // 3)
+        ]
 
         triangles_merged = [
-            BytesFactory.int32(byte)
-            for byte in BytesFactory.bytes_merge(triangles_raw, 4)
+            BytesHelper.int32(byte)
+            for byte in BytesHelper.bytes_merge(triangles_raw, 4)
         ]
-        for i in range(len(triangles_merged) // 3):
-            i *= 3
-            saved_triangles.append(Triangle(
-                vertices[triangles_merged[i]],
-                vertices[triangles_merged[i + 1]],
-                vertices[triangles_merged[i + 2]],
-            ))
+        # for i in range(len(triangles_merged) // 3):
+        #     i *= 3
+        #     saved_triangles.append(Triangle(
+        #         vertices[triangles_merged[i]],
+        #         vertices[triangles_merged[i + 1]],
+        #         vertices[triangles_merged[i + 2]],
+        #     ))
+        saved_triangles.extend((
+            Triangle(
+                vertices[triangles_merged[(ii := i * 3)]],
+                vertices[triangles_merged[ii + 1]],
+                vertices[triangles_merged[ii + 2]],
+            )
+            for i in range(len(triangles_merged) // 3)
+        ))
         index += 1
+
+
 
     write_pkl("output", saved_triangles)
     write_tri("output", saved_triangles)
+    write_bin("output", saved_triangles)
 
 
 
