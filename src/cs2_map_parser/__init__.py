@@ -138,7 +138,7 @@ class PhysicsFile:
             return bytes(data)
         else:
             save_path = Path(save_path)
-            save_path.mkdir(parents=True)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
             with save_path.open("wb") as file:
                 file.write(data)
             return None
@@ -228,7 +228,7 @@ class ModelFile:
                     return PhysicsFile(phys_buffer)
                 else:
                     save_path = Path(save_path)
-                    save_path.mkdir(parents=True)
+                    save_path.parent.mkdir(parents=True, exist_ok=True)
                     with save_path.open("wb") as file:
                         file.write(phys_buffer)
                     return None
@@ -283,7 +283,7 @@ class VPKFile:
             return ModelFile(model_buffer)
         else:
             save_path = Path(save_path)
-            save_path.mkdir(parents=True)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
             with save_path.open("wb") as file:
                 file.write(model_buffer)
             return None
