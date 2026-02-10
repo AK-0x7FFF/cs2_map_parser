@@ -11,7 +11,7 @@ def get_cs2_path() -> Path:
 
 
 def main() -> None:
-    Path("./map").mkdir()
+    Path("./map").mkdir(exist_ok=True)
 
     map_folder_path = get_cs2_path() / "game" / "csgo" / "maps"
     for map_path in map_folder_path.iterdir():
@@ -20,16 +20,11 @@ def main() -> None:
 
         map_name = map_path.stem
         try:
-            tri_bytes = MapParser.vpk2tri(map_path)
+            MapParser.vpk2tri(map_path, f"map/{map_name}.tri")
+            print(f"[SUCC] {map_name}")
         except:
             print(f"[FAIL] {map_name}")
             continue
-        else:
-            print(f"[SUCC] {map_name}")
-            with open(f"map/{map_name}.tri", "wb") as tri_file:
-                tri_file.write(tri_bytes)
-
-
 
 
 
