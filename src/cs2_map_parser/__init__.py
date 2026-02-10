@@ -104,26 +104,24 @@ class PhysicsFile:
                 ))
             yield saved_triangles
 
-    def to_triangle_file(self, save_path: str | Path | None = None) -> bytes | None:
+    def to_triangle_file(self, save_path: str | Path | None = None) -> bytes:
         data = bytearray()
 
         for triangles in chain(self.get_hulls(), self.get_meshes()):
             data.extend(triangles)
 
-        if save_path is None:
-            return bytes(data)
-        else:
+        if save_path is not None:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             with save_path.open("wb") as file:
                 file.write(data)
-            return None
+        return bytes(data)
 
     @property
     def tri(self) -> bytes:
         return self.to_triangle_file()
 
-    def to_opt_file(self, save_path: str | Path | None = None) -> bytes | None:
+    def to_opt_file(self, save_path: str | Path | None = None) -> bytes:
         data = bytearray(0x08)
 
         chunk_counter = 0
@@ -134,14 +132,12 @@ class PhysicsFile:
 
         data[:8] = chunk_counter.to_bytes(8, "little")
 
-        if save_path is None:
-            return bytes(data)
-        else:
+        if save_path is not None:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             with save_path.open("wb") as file:
                 file.write(data)
-            return None
+        return bytes(data)
 
     @property
     def opt(self) -> bytes:
@@ -201,7 +197,7 @@ class ModelFile:
 
         self.reader = BinaryReader(buffer)
 
-    def get_physics_file(self, save_path: str | Path | None = None) -> PhysicsFile | None:
+    def get_physics_file(self, save_path: str | Path | None = None) -> PhysicsFile:
         file_size      = self.reader.read_uint32()
         header_version = self.reader.read_uint16()
         version        = self.reader.read_uint16()
@@ -224,14 +220,12 @@ class ModelFile:
                 self.reader.seek(offset, Whence.BEGIN)
 
                 phys_buffer = self.reader.read_bytes(size)
-                if save_path is None:
-                    return PhysicsFile(phys_buffer)
-                else:
+                if save_path is not None:
                     save_path = Path(save_path)
                     save_path.parent.mkdir(parents=True, exist_ok=True)
                     with save_path.open("wb") as file:
                         file.write(phys_buffer)
-                    return None
+                return PhysicsFile(phys_buffer)
 
             self.reader.seek(position + 0x8, Whence.BEGIN)
 
@@ -240,7 +234,6 @@ class ModelFile:
     @property
     def vphys_c(self) -> PhysicsFile:
         return self.get_physics_file()
-
 
 class VPKFile:
     FILE_SUFFIX: str = "vpk"
@@ -271,7 +264,7 @@ class VPKFile:
     #     self._file.close()
 
 
-    def get_model_file(self, save_path: str | Path | None = None) -> ModelFile | None:
+    def get_model_file(self, save_path: str | Path | None = None) -> ModelFile:
         model_path = [path for path, _ in self.vpk.items() if path.split("/")[-1] == "world_physics.vmdl_c"]
         if not len(model_path):
             raise FileNotFoundError("world_physics.vmdl_c Not Found.")
@@ -279,14 +272,12 @@ class VPKFile:
         model_file = self.vpk.get_file(model_path[0])
         model_buffer =model_file.read()
 
-        if save_path is None:
-            return ModelFile(model_buffer)
-        else:
+        if save_path is not None:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             with save_path.open("wb") as file:
                 file.write(model_buffer)
-            return None
+        return ModelFile(model_buffer)
 
     @property
     def vmdl_c(self) -> ModelFile:
@@ -555,43 +546,39 @@ class MapParser:
 
     # VPK
     @staticmethod
-    def vpk2mdl(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> ModelFile | None:
+    def vpk2mdl(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> ModelFile:
         return VPKFile(source).get_model_file(save_path)
 
     @staticmethod
-    def vpk2phys(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> PhysicsFile | None:
+    def vpk2phys(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> PhysicsFile:
         return VPKFile(source).vmdl_c.get_physics_file(save_path)
 
     @staticmethod
-    def vpk2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def vpk2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return VPKFile(source).vmdl_c.vphys_c.to_triangle_file(save_path)
 
     @staticmethod
-    def vpk2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def vpk2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return VPKFile(source).vmdl_c.vphys_c.to_opt_file(save_path)
 
     # model
     @staticmethod
-    def mdl2phys(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> PhysicsFile | None:
+    def mdl2phys(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> PhysicsFile:
         return ModelFile(source).get_physics_file(save_path)
 
     @staticmethod
-    def mdl2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def mdl2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return ModelFile(source).vphys_c.to_triangle_file(save_path)
 
     @staticmethod
-    def mdl2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def mdl2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return ModelFile(source).vphys_c.to_opt_file(save_path)
 
     # physics
     @staticmethod
-    def phys2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def phys2tri(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return PhysicsFile(source).to_triangle_file(save_path)
 
     @staticmethod
-    def phys2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes | None:
+    def phys2opt(source: str | PathLike | IO | bytes, save_path: str | Path | None = None) -> bytes:
         return PhysicsFile(source).to_opt_file(save_path)
-
-
-
-
