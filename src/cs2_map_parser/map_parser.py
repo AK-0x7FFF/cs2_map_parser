@@ -4,7 +4,7 @@ from os import PathLike
 from pathlib import Path
 from typing import IO, Generator
 from itertools import count, chain
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile
 
 from binary_reader import BinaryReader, Whence
 from keyvalues3 import MemoryBuffer, read_valve_keyvalue3
@@ -237,14 +237,14 @@ class VPKFile:
 
     def __init__(self, source: str | PathLike | IO | bytes) -> None:
         if isinstance(source, BufferedReader):
-            self._file = TemporaryFile("wb", suffix=f".{self.FILE_SUFFIX}")
+            self._file = NamedTemporaryFile("wb", suffix=".vpk", delete_on_close=False)
             self._file.write(source.read())
-            vpk_path = self._file.fileno()
+            vpk_path = self._file.name
 
         elif isinstance(source, bytes | bytearray):
-            self._file = TemporaryFile("wb", suffix=f".{self.FILE_SUFFIX}")
+            self._file = NamedTemporaryFile("wb", suffix=".vpk", delete_on_close=False)
             self._file.write(source)
-            vpk_path = self._file.fileno()
+            vpk_path = self._file.name
 
         elif isinstance(source, str | Path):
             vpk_path = Path(source)
