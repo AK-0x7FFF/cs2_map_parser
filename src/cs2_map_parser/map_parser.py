@@ -15,8 +15,6 @@ from vpk import VPK
 
 
 class PhysicsFile:
-    FILE_SUFFIX: str = "vphys_c"
-
     def __init__(self, source: str | PathLike | IO | bytes) -> None:
         if isinstance(source, BufferedReader):
             buffer = source.read()
@@ -28,8 +26,6 @@ class PhysicsFile:
             model_path = Path(source)
             if not model_path.exists() or not model_path.is_file():
                 raise FileNotFoundError(model_path)
-            if not model_path.name.endswith(f".{self.FILE_SUFFIX}"):
-                raise ValueError()
 
             with open(model_path, "rb") as model_file:
                 buffer = model_file.read()
@@ -145,7 +141,6 @@ class PhysicsFile:
         return self.to_opt_file()
 
 class ModelFile:
-    FILE_SUFFIX: str = "vmdl_c"
 
     class BlockType(IntEnum):
         # https://github.com/ValveResourceFormat/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/Enums/BlockType.cs
@@ -189,8 +184,6 @@ class ModelFile:
             model_path = Path(source)
             if not model_path.exists() or not model_path.is_file():
                 raise FileNotFoundError(model_path)
-            if not model_path.name.endswith(f".{self.FILE_SUFFIX}"):
-                raise ValueError()
 
             with open(model_path, "rb") as model_file:
                 buffer = model_file.read()
@@ -257,8 +250,6 @@ class VPKFile:
             vpk_path = Path(source)
             if not vpk_path.exists() or not vpk_path.is_file():
                 raise FileNotFoundError(vpk_path)
-            if not vpk_path.name.endswith(f".{self.FILE_SUFFIX}"):
-                raise ValueError()
 
         else: raise ValueError()
 
